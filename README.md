@@ -179,4 +179,4 @@ keyboard and mouse binding registration.
 
 ## License
 
-MIT
+[MIT](https://opensource.org/licenses/MIT), Copyright (c) 2026
