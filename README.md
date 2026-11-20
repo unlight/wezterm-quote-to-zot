@@ -1,9 +1,9 @@
 # wezterm-quote-to-zot
 
-Вставляет выделенный текст в поле ввода [zot](https://github.com/patriceckhart/zot)
-как цитату, ничего не отправляя. Выделили кусок ответа агента, нажали одну
-комбинацию, текст оказался в редакторе zot, а курсор встал на следующей
-строке для комментария.
+Paste a terminal selection into the [zot](https://github.com/patriceckhart/zot)
+prompt as a quote without submitting it. Select part of an agent reply, press one
+chord, and the text lands in zot's editor with the cursor on the next line for
+your comment.
 
 ```
 > selected text from response
@@ -13,9 +13,9 @@ My comment here...
 my comment 2 here
 ```
 
-Несколько цитат за один раз: зажмите `Ctrl` и протяните мышь по нескольким
-блокам. Каждое отпускание кнопки добавляет цитату в очередь, после паузы
-очередь вставляется в zot. Курсор остаётся под первой цитатой:
+Several quotes at once: hold `Ctrl` and drag over multiple blocks. Each mouse
+release queues a quote; after a pause the queue is pasted. The cursor stays under
+the first quote:
 
 ```
 > selected text 1
@@ -26,28 +26,28 @@ my comment 2 here
 > selected text 3
 ```
 
-## Установка
+## Install
 
-Скопируйте репозиторий или создайте симлинк в каталоге конфигурации WezTerm:
+Copy the repository or symlink it into the WezTerm config directory:
 
 ```sh
 ln -sfn ~/Dev/wezterm-quote-to-zot/init.lua \
   ~/.config/wezterm/wezterm-quote-to-zot.lua
 ```
 
-Подключите модуль в `~/.config/wezterm/wezterm.lua`:
+Load the module in `~/.config/wezterm/wezterm.lua`:
 
 ```lua
 local quote_to_zot = require 'wezterm-quote-to-zot'
 quote_to_zot.apply(config)
 ```
 
-Перезапустите WezTerm или перезагрузите конфигурацию (`Ctrl+Shift+R`).
-Выделите текст и нажмите `Ctrl+Shift+Q`.
+Restart WezTerm or reload the config (`Ctrl+Shift+R`). Select text and press
+`Ctrl+Shift+Q`.
 
-## Настройка
+## Options
 
-`apply(config, options)` принимает необязательную таблицу:
+`apply(config, options)` accepts an optional table:
 
 ```lua
 quote_to_zot.apply(config, {
@@ -65,121 +65,118 @@ quote_to_zot.apply(config, {
 })
 ```
 
-| Параметр          | По умолчанию                    | Назначение |
-| ----------------- | ------------------------------- | ---------- |
-| `key`             | `{ key = 'q', mods = 'CTRL|SHIFT' }` | Комбинация клавиш |
-| `prefix`          | `> `                            | Префикс каждой строки цитаты |
-| `lead`            | `\n\n`                          | Разделитель перед цитатой, начиная со второй вставки |
-| `trail`           | `\n`                            | Перевод строки под цитатой: курсор встаёт сразу под ней |
-| `require_zot`     | `true`                          | Вставлять только в панель, где работает zot |
-| `clear_selection` | `true`                          | Снимать выделение после вставки |
-| `multi_selection` | `true`                          | `Ctrl` + протяжка собирает несколько цитат |
-| `flush_delay`     | `2.0`                           | Пауза после последнего выделения перед вставкой, секунды |
-| `cursor_after_first` | `true`                       | Ставить курсор под первой цитатой в блоке |
-| `notify`          | `status`                        | Уведомления: `status`, `toast` или `none` |
-| `notify_timeout`  | `1.0`                           | Сколько секунд показывать уведомление |
+| Option | Default | Purpose |
+| ------ | ------- | ------- |
+| `key` | `{ key = 'q', mods = 'CTRL|SHIFT' }` | Hotkey |
+| `prefix` | `> ` | Prefix for every quoted line |
+| `lead` | `\n\n` | Separator before a quote when the input already has text |
+| `trail` | `\n` | Newline under the quote; the cursor lands right below it |
+| `require_zot` | `true` | Only paste into a pane running zot |
+| `clear_selection` | `true` | Clear the selection after pasting |
+| `multi_selection` | `true` | `Ctrl` + drag queues several quotes |
+| `flush_delay` | `2.0` | Pause after the last selection before pasting, in seconds |
+| `cursor_after_first` | `true` | Put the cursor under the first quote in a block |
+| `notify` | `status` | Notifications: `status`, `toast` or `none` |
+| `notify_timeout` | `1.0` | How long a notification stays visible, in seconds |
 
-Плагин проверяет поле ввода по экрану: если после приглашения `▌` текста нет,
-цитата вставляется без ведущего разделителя, поэтому пустая строка сверху не
-появляется. Если в поле уже есть текст, перед цитатой добавляется `lead`.
+The plugin checks the input by reading the pane. When the last `▌` prompt line
+has no text below it, the quote is pasted without a leading separator, so no
+blank line appears at the top. When the input already has text, `lead` is added.
 
-Если выделение сделано в другой панели того же таба, цитата всё равно уйдёт
-в панель zot. Если панели zot в табе нет, показывается уведомление и ничего
-не вставляется.
+If the selection is made in another pane of the same tab, the quote still goes
+to the zot pane. When no zot pane is found, a notification appears and nothing
+is pasted.
 
-## Как это работает
+## Notifications
 
-- `window:get_selection_text_for_pane(pane)` читает нативное выделение WezTerm.
-- `pane:send_text()` печатает цитату в zot. Каждый перевод строки отправляется
-  как `\x1b\r` (Alt+Enter): zot добавляет строку в редакторе и не отправляет
-  промпт.
+By default messages (`Queued 2`, `Quoted 2, cursor first`) appear on the right
+side of the tab bar and disappear after one second. They are silent and do not
+depend on desktop settings.
 
-Переводы строк отправляются по одному намеренно. Длинную вставку через
-bracketed paste zot сворачивает в `[pasted text #1 +N lines]`, и цитата
-перестаёт быть видимой. Построчная печать оставляет весь текст на экране.
-Длинные цитаты вставляются медленнее, но каждая строка это один вызов
-`send_text`.
+| `notify` | Behavior |
+| -------- | -------- |
+| `status` | Text on the right side of the tab bar for `notify_timeout` seconds |
+| `toast` | System notification. The notification daemon controls sound and lifetime, and some desktops ignore the requested timeout |
+| `none` | No notifications |
 
-## Множественное выделение
-
-Плагин добавляет три привязки мыши с модификатором `Ctrl`:
-
-| Событие | Действие |
-| ------- | -------- |
-| `Ctrl` + нажатие левой кнопки | начало нового выделения, очередь не сбрасывается |
-| `Ctrl` + протяжка | расширение выделения |
-| `Ctrl` + отпускание кнопки | выделение превращается в цитату и попадает в очередь |
-
-После последнего отпускания запускается таймер `flush_delay`. Если за это
-время начать новое выделение, таймер отменяется. Когда пауза истекла, все
-цитаты уходят в zot.
-
-Порядок вставки при нескольких цитатах: сначала вставляется хвост блока,
-затем курсор уходит в начало поля и вставляется первая цитата. Поэтому
-курсор остаётся под первой цитатой, а остальные стоят ниже. Прокрутка чата,
-вызванная переходом в начало поля, компенсируется `PageDown`.
-
-Хоткей `Ctrl+Shift+Q` вставляет очередь немедленно, не дожидаясь таймера.
-Если очередь пуста, хоткей работает как раньше: вставляет текущее выделение.
-
-## Уведомления
-
-По умолчанию сообщения (`Queued 2`, `Quoted 2, cursor first`) показываются
-справа в таб-баре и исчезают через секунду. Это беззвучно и не зависит от
-настроек рабочего стола.
-
-| `notify` | Поведение |
-| -------- | --------- |
-| `status` | Текст справа в таб-баре на `notify_timeout` секунд |
-| `toast`  | Системное уведомление. Звук и время жизни задаёт демон уведомлений: часть окружений игнорирует переданный таймаут |
-| `none`   | Ничего не показывать |
-
-`status` виден только при включённом таб-баре. Если он скрыт, используйте
+`status` is visible only when the tab bar is enabled. If it is hidden, use
 `toast`.
 
-## Проверка
+## How it works
 
-Из каталога репозитория:
+- `window:get_selection_text_for_pane(pane)` reads the native WezTerm selection.
+- `pane:send_text()` types the quote into zot. Every newline is sent as
+  `\x1b\r` (Alt+Enter), which inserts an editor line in zot without submitting
+  the prompt.
+
+Newlines are typed one by one on purpose: zot collapses a long bracketed paste
+into `[pasted text #1 +N lines]`, so the quote would stop being visible.
+Line-by-line typing keeps the whole quote on screen. Long quotes are slower, but
+each line is a single `send_text` call.
+
+## Multiple selection
+
+The plugin adds three mouse bindings with the `Ctrl` modifier:
+
+| Event | Action |
+| ----- | ------ |
+| `Ctrl` + left button down | start a new selection, the queue is kept |
+| `Ctrl` + drag | extend the selection |
+| `Ctrl` + left button up | turn the selection into a quote and queue it |
+
+After the last release a `flush_delay` timer starts. Starting a new selection
+cancels it. When the pause ends, all quotes are pasted into zot.
+
+With several quotes the tail of the block is pasted first, then the cursor moves
+to the top of the input and the first quote is pasted. The cursor stays under
+the first quote and the rest follow below. Moving to the top is emulated with
+500 `Up` presses, 100 `PageDown` presses and `Ctrl+A`: extra `Up` presses scroll
+the chat up, so `PageDown` brings it back down without moving the editor cursor.
+
+The `Ctrl+Shift+Q` hotkey pastes the queue immediately, without waiting for the
+timer. With an empty queue it works as usual and pastes the current selection.
+
+## Verification
+
+From the repository directory:
 
 ```sh
 wezterm --config-file test/run.lua show-keys --lua >/dev/null
 ```
 
-Тест проверяет разметку цитаты, пустые строки, CRLF, хвостовые переводы
-строк, отправку переводов строк через Alt+Enter, порядок вставки нескольких
-цитат и регистрацию привязок клавиатуры и мыши.
+The test covers quote markup, blank lines, CRLF, trailing newlines, newline
+injection via Alt+Enter, empty-input detection, the order of several quotes, and
+keyboard and mouse binding registration.
 
-## Ограничения
+## Limitations
 
-- Не переназначайте `alt+enter` в `keymap` zot: на нём держится вставка строк.
-- Если в zot включён `tui_click_to_position`, мышь принадлежит zot и WezTerm
-  не видит выделение. Выделяйте с зажатым `Shift`.
-- При открытом диалоге zot (подтверждение инструмента, логин, панель
-  расширения) текст уйдёт в диалог, а не в промпт.
-- Выделенный код теряет fences: каждая строка получает `> ` и становится
-  цитатой.
-- Очень большие выделения вставляются заметно медленнее.
-- Переносы строк по ширине терминала могут попасть в цитату как есть.
-- Отпускание `Ctrl` в WezTerm не наблюдаемо: вставка запускается по таймеру
-  после отпускания кнопки мыши, а не по отпусканию `Ctrl`.
-- `cursor_after_first` ставит курсор под первой цитатой только когда поле
-  ввода пустое (проверяется по экрану). Если в поле уже есть текст, блок
-  дописывается в конец и курсор остаётся в конце блока.
-- Переход в начало поля эмулируется как 500 нажатий `Up`, 100 нажатий
-  `PageDown` и `Ctrl+A`. Лишние `Up` прокручивают чат вверх, поэтому
-  `PageDown` возвращает чат вниз. Если в поле больше 500 строк, чат длиннее
-  100 страниц или zot изменит обработку этих клавиш, приём сломается. Позиция
-  ручной прокрутки чата при этом сбрасывается вниз.
-- Привязки `Ctrl` + мышь перекрывают стандартное поведение `Ctrl` + клик в
-  WezTerm. Выделение без `Ctrl` не меняется.
-- Уведомления в режиме `status` не видны при скрытом таб-баре, а `toast`
-  не позволяет управлять звуком: его настраивает демон уведомлений.
+- Do not rebind `alt+enter` in zot's `keymap`; newline injection depends on it.
+- If zot's `tui_click_to_position` is enabled, zot owns the mouse and WezTerm
+  cannot see the selection. Hold `Shift` while dragging to get a native
+  selection.
+- With a zot dialog open (tool confirmation, login, extension panel), typed text
+  goes to the dialog, not the prompt.
+- Selected code loses its fences: every line gets a `> ` prefix and becomes a
+  quote block.
+- Very large selections paste noticeably slower.
+- Wrapped lines may be quoted with the terminal's visual line breaks.
+- Releasing `Ctrl` is not observable in WezTerm: pasting starts on a timer after
+  the mouse button is released, not when `Ctrl` is released.
+- `cursor_after_first` puts the cursor under the first quote only when the input
+  is empty (checked by reading the pane). With text already in the input, the
+  block is appended at the end and the cursor stays after the last quote.
+- Moving to the top of the input is emulated with 500 `Up`, 100 `PageDown` and
+  `Ctrl+A`. If the input has more than 500 lines, the chat has more than 100
+  pages, or zot changes how these keys work, the trick breaks. A manually
+  scrolled chat position is reset to the bottom.
+- The `status` notification is invisible when the tab bar is hidden, and `toast`
+  does not control sound: the notification daemon does.
 
-## Совместимость
+## Compatibility
 
 - WezTerm `20261120-054626-8066067d`
 - zot `0.4.86`
 
-## Лицензия
+## License
 
 MIT

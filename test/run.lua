@@ -23,14 +23,14 @@ local function typed_text(sent)
   return (table.concat(sent):gsub('\27\r', '\n'))
 end
 
--- Разметка цитат.
+-- Quote markup.
 assert_equal(internal.to_quote('one\ntwo', '> '), '> one\n> two', 'two lines')
 assert_equal(internal.to_quote('one\n\ntwo', '> '), '> one\n>\n> two', 'blank line')
 assert_equal(internal.to_quote('one\r\ntwo', '> '), '> one\n> two', 'crlf')
 assert_equal(internal.to_quote('trailing\n\n\n', '> '), '> trailing', 'trailing newlines')
 assert_equal(internal.to_quote('  indented  ', '> '), '>   indented  ', 'leading spaces')
 
--- Переводы строк отправляются как Alt+Enter, а не как Enter.
+-- Line breaks are sent as Alt+Enter, not Enter.
 local pane = fake_pane()
 internal.send_typed(pane, '> a\n\n')
 assert_equal(table.concat(pane.sent), '> a\27\r\27\r', 'typed line breaks')
@@ -58,22 +58,22 @@ local settings = {
   cursor_after_first = true,
 }
 
--- Одна цитата в пустом поле.
+-- One quote into an empty input.
 pane = fake_pane()
 internal.insert_quotes(pane, { '> a' }, settings, true)
 assert_equal(typed_text(pane.sent), '> a\n', 'single quote')
 
--- Одна цитата после предыдущей вставки.
+-- One quote after an earlier paste.
 pane = fake_pane()
 internal.insert_quotes(pane, { '> a' }, settings, false)
 assert_equal(typed_text(pane.sent), '\n\n> a\n', 'single quote with lead')
 
--- Несколько цитат, поле не пустое: курсор в конце.
+-- Several quotes with a non-empty input: cursor at the end.
 pane = fake_pane()
 internal.insert_quotes(pane, { '> a', '> b', '> c' }, settings, false)
 assert_equal(typed_text(pane.sent), '\n\n> a\n\n> b\n\n> c\n', 'multiple quotes at end')
 
--- Несколько цитат, поле пустое: хвост, переход в начало, первая цитата.
+-- Several quotes with an empty input: tail, jump to start, first quote.
 pane = fake_pane()
 internal.insert_quotes(pane, { '> a', '> b', '> c' }, settings, true)
 assert_equal(typed_text(pane.sent), '> a\n\n\n> b\n\n> c', 'multiple quotes')
@@ -92,7 +92,7 @@ for i = 7 + internal.start_ups, 6 + internal.start_ups + internal.start_page_dow
   assert_equal(pane.sent[i], '\27[6~', 'chat page down')
 end
 
--- Регистрация привязок.
+-- Binding registration.
 local config = wezterm.config_builder()
 local keys_before = #(config.keys or {})
 local mouse_before = #(config.mouse_bindings or {})

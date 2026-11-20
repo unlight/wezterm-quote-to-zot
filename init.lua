@@ -1,4 +1,4 @@
--- Цитаты из выделенного текста в поле ввода zot, без отправки.
+-- Quote terminal selections into the zot prompt without submitting.
 local wezterm = require 'wezterm'
 local act = wezterm.action
 
@@ -7,24 +7,24 @@ local M = {}
 local DEFAULT_SETTINGS = {
   key = { key = 'q', mods = 'CTRL|SHIFT' },
   prefix = '> ',
-  lead = '\n\n',            -- разделитель перед цитатой, когда поле не пустое
-  trail = '\n',             -- перевод строки под цитатой
-  require_zot = true,       -- вставлять только в панель, где работает zot
+  lead = '\n\n',            -- separator before a quote when the input has text
+  trail = '\n',             -- newline under the quote
+  require_zot = true,       -- only paste into a pane running zot
   clear_selection = true,
-  multi_selection = true,   -- Ctrl+протяжка собирает несколько цитат
-  flush_delay = 2.0,        -- пауза после последнего Ctrl+отпускания мыши
+  multi_selection = true,   -- Ctrl+drag queues multiple quotes
+  flush_delay = 2.0,        -- pause after the last Ctrl+mouse release
   cursor_after_first = true,
   notify = 'status',        -- 'status' | 'toast' | 'none'
-  notify_timeout = 1.0,     -- секунды
+  notify_timeout = 1.0,     -- seconds
 }
 
-local START_UPS = 500 -- столько Up перед Ctrl+A, чтобы попасть в начало поля
-local START_PAGE_DOWNS = 100 -- возвращает прокрученный Up'ами чат обратно вниз
+local START_UPS = 500 -- ups needed before Ctrl+A to reach the top of the input
+local START_PAGE_DOWNS = 100 -- scrolls the chat back down after those ups
 
 local pending = {} -- pane_id -> { quotes = {}, generation = 0 }
 local notify_generation = {}
 
--- Секундное беззвучное сообщение в правой части таб-бара.
+-- One-second silent message on the right side of the tab bar.
 local function notify(window, text, settings)
   if settings.notify == 'none' then
     return
@@ -70,7 +70,7 @@ local function to_quote(text, prefix)
   return table.concat(out, '\n')
 end
 
--- \x1b\r это Alt+Enter: zot добавляет строку в редакторе и не отправляет промпт.
+-- \x1b\r is Alt+Enter: zot inserts an editor line without submitting.
 local function send_typed(pane, text)
   local first = true
   for line in (text .. '\n'):gmatch('([^\n]*)\n') do
@@ -84,8 +84,8 @@ local function send_typed(pane, text)
   end
 end
 
--- Эмуляция перехода в начало поля: Up до упора и Ctrl+A в начало строки.
--- Лишние Up прокручивают чат вверх, поэтому PageDown возвращает его вниз.
+-- Emulate moving to the top of the input: Up to the top, then Ctrl+A.
+-- Extra Ups scroll the chat up, so PageDown brings it back down.
 local function move_to_start(pane)
   for _ = 1, START_UPS do
     pane:send_text('\x1b[A')
@@ -128,7 +128,7 @@ local function find_zot_pane(window, pane)
   return nil
 end
 
--- Пустое поле ввода: последняя строка с приглашением "▌" и всё ниже без текста.
+-- Empty input: the last line with the "▌" prompt has no text below it.
 local function field_is_empty(pane)
   local ok, text = pcall(function()
     return pane:get_lines_as_text()
@@ -169,8 +169,8 @@ local function selection_of(window, pane)
   return text
 end
 
--- Несколько цитат: хвост вставляется первым, затем первая цитата пишется
--- в начало поля. Курсор остаётся под первой цитатой.
+-- Several quotes: insert the tail first, then write the first quote at
+-- the top of the input. The cursor stays under the first quote.
 local function insert_quotes(target, quotes, settings, empty_input)
   local lead = empty_input and '' or settings.lead
 
@@ -333,7 +333,7 @@ local function add_mouse_bindings(config, settings)
   })
 end
 
--- Добавляет горячую клавишу и мышиные привязки в конфигурацию WezTerm.
+-- Adds the hotkey and mouse bindings to the WezTerm config.
 function M.apply(config, options)
   local settings = merge_settings(options)
 
@@ -351,7 +351,7 @@ function M.apply(config, options)
   end
 end
 
--- Точка входа для wezterm.plugin.require.
+-- Entry point for wezterm.plugin.require.
 M.apply_to_config = M.apply
 
 M._internal = {
