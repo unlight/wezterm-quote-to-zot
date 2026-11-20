@@ -8,7 +8,7 @@ local DEFAULT_SETTINGS = {
   key = { key = 'q', mods = 'CTRL|SHIFT' },
   prefix = '> ',
   lead = '\n\n',            -- разделитель перед цитатой, когда поле не пустое
-  trail = '\n\n',           -- пустая строка под цитатой
+  trail = '\n',             -- перевод строки под цитатой
   require_zot = true,       -- вставлять только в панель, где работает zot
   clear_selection = true,
   multi_selection = true,   -- Ctrl+протяжка собирает несколько цитат

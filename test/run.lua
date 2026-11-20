@@ -54,24 +54,24 @@ assert_equal(internal.field_is_empty(fake_screen('no prompt\n')), false, 'no pro
 
 local settings = {
   lead = '\n\n',
-  trail = '\n\n',
+  trail = '\n',
   cursor_after_first = true,
 }
 
 -- Одна цитата в пустом поле.
 pane = fake_pane()
 internal.insert_quotes(pane, { '> a' }, settings, true)
-assert_equal(typed_text(pane.sent), '> a\n\n', 'single quote')
+assert_equal(typed_text(pane.sent), '> a\n', 'single quote')
 
 -- Одна цитата после предыдущей вставки.
 pane = fake_pane()
 internal.insert_quotes(pane, { '> a' }, settings, false)
-assert_equal(typed_text(pane.sent), '\n\n> a\n\n', 'single quote with lead')
+assert_equal(typed_text(pane.sent), '\n\n> a\n', 'single quote with lead')
 
 -- Несколько цитат, поле не пустое: курсор в конце.
 pane = fake_pane()
 internal.insert_quotes(pane, { '> a', '> b', '> c' }, settings, false)
-assert_equal(typed_text(pane.sent), '\n\n> a\n\n> b\n\n> c\n\n', 'multiple quotes at end')
+assert_equal(typed_text(pane.sent), '\n\n> a\n\n> b\n\n> c\n', 'multiple quotes at end')
 
 -- Несколько цитат, поле пустое: хвост, переход в начало, первая цитата.
 pane = fake_pane()
