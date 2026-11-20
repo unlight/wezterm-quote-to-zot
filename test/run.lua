@@ -38,6 +38,20 @@ pane = fake_pane()
 internal.send_typed(pane, '> a\n> b')
 assert_equal(table.concat(pane.sent), '> a\27\r> b', 'typed two lines')
 
+local function fake_screen(text)
+  return {
+    get_lines_as_text = function()
+      return text
+    end,
+  }
+end
+
+assert_equal(internal.field_is_empty(fake_screen('▌\n')), true, 'empty input')
+assert_equal(internal.field_is_empty(fake_screen('▌ > a\n')), false, 'input with text')
+assert_equal(internal.field_is_empty(fake_screen('▌\n  > a\n')), false, 'text below prompt')
+assert_equal(internal.field_is_empty(fake_screen('▌\n  \n  \n')), true, 'blank continuation')
+assert_equal(internal.field_is_empty(fake_screen('no prompt\n')), false, 'no prompt')
+
 local settings = {
   lead = '\n\n',
   trail = '\n\n',

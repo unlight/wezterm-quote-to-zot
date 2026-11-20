@@ -21,8 +21,7 @@ local DEFAULT_SETTINGS = {
 local START_UPS = 500 -- столько Up перед Ctrl+A, чтобы попасть в начало поля
 local START_PAGE_DOWNS = 100 -- возвращает прокрученный Up'ами чат обратно вниз
 
-local pasted_once = {} -- pane_id -> true после первой вставки
-local pending = {}     -- pane_id -> { quotes = {}, generation = 0 }
+local pending = {} -- pane_id -> { quotes = {}, generation = 0 }
 local notify_generation = {}
 
 -- Секундное беззвучное сообщение в правой части таб-бара.
@@ -129,6 +128,37 @@ local function find_zot_pane(window, pane)
   return nil
 end
 
+-- Пустое поле ввода: последняя строка с приглашением "▌" и всё ниже без текста.
+local function field_is_empty(pane)
+  local ok, text = pcall(function()
+    return pane:get_lines_as_text()
+  end)
+  if not ok or not text then
+    return false
+  end
+
+  local lines = split_lines(text)
+  local prompt
+  for i, line in ipairs(lines) do
+    if line:find('^▌') then
+      prompt = i
+    end
+  end
+  if not prompt then
+    return false
+  end
+
+  if lines[prompt]:gsub('^▌%s*', '') ~= '' then
+    return false
+  end
+  for i = prompt + 1, #lines do
+    if lines[i]:match('%S') then
+      return false
+    end
+  end
+  return true
+end
+
 local function selection_of(window, pane)
   local ok, text = pcall(function()
     return window:get_selection_text_for_pane(pane)
@@ -141,15 +171,15 @@ end
 
 -- Несколько цитат: хвост вставляется первым, затем первая цитата пишется
 -- в начало поля. Курсор остаётся под первой цитатой.
-local function insert_quotes(target, quotes, settings, first_in_pane)
-  local lead = first_in_pane and '' or settings.lead
+local function insert_quotes(target, quotes, settings, empty_input)
+  local lead = empty_input and '' or settings.lead
 
   if #quotes == 1 then
     send_typed(target, lead .. quotes[1] .. settings.trail)
     return
   end
 
-  if settings.cursor_after_first and first_in_pane then
+  if settings.cursor_after_first and empty_input then
     local tail = {}
     for i = 2, #quotes do
       tail[#tail + 1] = quotes[i]
@@ -184,16 +214,14 @@ flush = function(window, pane, settings)
   local quotes = state.quotes
   pending[pane_id] = nil
 
-  local target_id = tostring(target:pane_id())
-  local first_in_pane = not pasted_once[target_id]
-  insert_quotes(target, quotes, settings, first_in_pane)
-  pasted_once[target_id] = true
+  local empty_input = field_is_empty(target)
+  insert_quotes(target, quotes, settings, empty_input)
 
   if settings.clear_selection then
     window:perform_action(act.ClearSelection, pane)
   end
 
-  local placed = (#quotes > 1 and settings.cursor_after_first and first_in_pane) and 'first' or 'end'
+  local placed = (#quotes > 1 and settings.cursor_after_first and empty_input) and 'first' or 'end'
   notify(window, string.format('Quoted %d, cursor %s', #quotes, placed), settings)
 end
 
@@ -332,6 +360,7 @@ M._internal = {
   send_typed = send_typed,
   move_to_start = move_to_start,
   insert_quotes = insert_quotes,
+  field_is_empty = field_is_empty,
   start_ups = START_UPS,
   start_page_downs = START_PAGE_DOWNS,
 }
