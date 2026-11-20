@@ -28,11 +28,11 @@ the first quote:
 
 ## Install
 
-Copy the repository or symlink it into the WezTerm config directory:
+Copy the repository or symlink it into the WezTerm config directory. Run this
+from the repository directory:
 
 ```sh
-ln -sfn ~/Dev/wezterm-quote-to-zot/init.lua \
-  ~/.config/wezterm/wezterm-quote-to-zot.lua
+ln -sfn "$PWD/init.lua" ~/.config/wezterm/wezterm-quote-to-zot.lua
 ```
 
 Load the module in `~/.config/wezterm/wezterm.lua`:
