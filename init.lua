@@ -1,20 +1,20 @@
--- wezterm-quote-to-zot: quote terminal selections into the zot prompt
--- without submitting them.
+-- Цитаты из выделенного текста в поле ввода zot, без отправки.
 local wezterm = require 'wezterm'
 local act = wezterm.action
 
 local M = {}
 
-M.defaults = {
+local DEFAULT_SETTINGS = {
   key = { key = 'q', mods = 'CTRL|SHIFT' },
   prefix = '> ',
-  lead = '\n\n',          -- separator before a quote, from the second paste on
-  trail = '\n\n',         -- blank line below a quote, where the comment goes
-  require_zot = true,     -- only paste into a pane running zot
-  clear_selection = true, -- drop the selection after pasting
+  lead = '\n\n',          -- разделитель перед цитатой, начиная со второй вставки
+  trail = '\n\n',         -- пустая строка под цитатой, где печатается комментарий
+  require_zot = true,     -- вставлять только в панель, где работает zot
+  clear_selection = true,
 }
 
-local pasted_once = {} -- pane_id -> true after the first paste
+-- pane_id -> true после первой вставки
+local pasted_once = {}
 
 local function split_lines(text)
   local normalized = text:gsub('\r\n', '\n'):gsub('\n+$', '')
@@ -37,7 +37,7 @@ local function to_quote(text, prefix)
   return table.concat(out, '\n')
 end
 
--- \x1b\r is Alt+Enter: zot opens a new editor line instead of submitting.
+-- \x1b\r это Alt+Enter: zot добавляет строку в редакторе и не отправляет промпт.
 local function send_typed(pane, text)
   local first = true
   for line in (text .. '\n'):gmatch('([^\n]*)\n') do
@@ -83,7 +83,7 @@ local function find_zot_pane(window, pane)
   return nil
 end
 
-local function insert_quote(window, pane, opts)
+local function insert_quote(window, pane, settings)
   local ok, selection = pcall(function()
     return window:get_selection_text_for_pane(pane)
   end)
@@ -93,7 +93,7 @@ local function insert_quote(window, pane, opts)
   end
 
   local target = pane
-  if opts.require_zot then
+  if settings.require_zot then
     target = find_zot_pane(window, pane)
     if not target then
       window:toast_notification('quote-to-zot', 'No zot pane in this tab', nil, 1500)
@@ -102,32 +102,47 @@ local function insert_quote(window, pane, opts)
   end
 
   local pane_id = tostring(target:pane_id())
-  local lead = pasted_once[pane_id] and opts.lead or ''
-  send_typed(target, lead .. to_quote(selection, opts.prefix) .. opts.trail)
+  local lead = pasted_once[pane_id] and settings.lead or ''
+  send_typed(target, lead .. to_quote(selection, settings.prefix) .. settings.trail)
   pasted_once[pane_id] = true
 
-  if opts.clear_selection then
+  if settings.clear_selection then
     window:perform_action(act.ClearSelection, pane)
   end
 end
 
-function M.apply_to_config(config, user)
-  local opts = {}
-  for key, value in pairs(M.defaults) do
-    opts[key] = value
+local function merge_settings(options)
+  local settings = {}
+  for key, value in pairs(DEFAULT_SETTINGS) do
+    settings[key] = value
   end
-  for key, value in pairs(user or {}) do
-    opts[key] = value
+  for key, value in pairs(options or {}) do
+    settings[key] = value
   end
+  return settings
+end
+
+-- Добавляет горячую клавишу в конфигурацию WezTerm.
+function M.apply(config, options)
+  local settings = merge_settings(options)
 
   config.keys = config.keys or {}
   table.insert(config.keys, {
-    key = opts.key.key,
-    mods = opts.key.mods,
+    key = settings.key.key,
+    mods = settings.key.mods,
     action = wezterm.action_callback(function(window, pane)
-      insert_quote(window, pane, opts)
+      insert_quote(window, pane, settings)
     end),
   })
 end
+
+-- Точка входа для wezterm.plugin.require.
+M.apply_to_config = M.apply
+
+M._internal = {
+  split_lines = split_lines,
+  to_quote = to_quote,
+  send_typed = send_typed,
+}
 
 return M
