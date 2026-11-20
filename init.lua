@@ -19,6 +19,7 @@ local DEFAULT_SETTINGS = {
 }
 
 local START_UPS = 500 -- столько Up перед Ctrl+A, чтобы попасть в начало поля
+local START_PAGE_DOWNS = 100 -- возвращает прокрученный Up'ами чат обратно вниз
 
 local pasted_once = {} -- pane_id -> true после первой вставки
 local pending = {}     -- pane_id -> { quotes = {}, generation = 0 }
@@ -85,9 +86,13 @@ local function send_typed(pane, text)
 end
 
 -- Эмуляция перехода в начало поля: Up до упора и Ctrl+A в начало строки.
+-- Лишние Up прокручивают чат вверх, поэтому PageDown возвращает его вниз.
 local function move_to_start(pane)
   for _ = 1, START_UPS do
     pane:send_text('\x1b[A')
+  end
+  for _ = 1, START_PAGE_DOWNS do
+    pane:send_text('\x1b[6~')
   end
   pane:send_text('\x01')
 end
@@ -328,6 +333,7 @@ M._internal = {
   move_to_start = move_to_start,
   insert_quotes = insert_quotes,
   start_ups = START_UPS,
+  start_page_downs = START_PAGE_DOWNS,
 }
 
 return M

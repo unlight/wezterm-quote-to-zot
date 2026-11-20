@@ -66,9 +66,16 @@ assert_equal(typed_text(pane.sent), '> a\n\n\n> b\n\n> c', 'multiple quotes')
 assert_equal(pane.sent[#pane.sent], '\27\r', 'cursor line under first quote')
 assert_equal(pane.sent[#pane.sent - 1], '> a', 'first quote inserted last')
 assert_equal(pane.sent[#pane.sent - 2], '\1', 'cursor to line start')
-assert_equal(#pane.sent, 6 + internal.start_ups + 1 + 2, 'typed chunk count')
+assert_equal(
+  #pane.sent,
+  6 + internal.start_ups + internal.start_page_downs + 1 + 2,
+  'typed chunk count'
+)
 for i = 7, 6 + internal.start_ups do
   assert_equal(pane.sent[i], '\27[A', 'cursor up')
+end
+for i = 7 + internal.start_ups, 6 + internal.start_ups + internal.start_page_downs do
+  assert_equal(pane.sent[i], '\27[6~', 'chat page down')
 end
 
 -- Регистрация привязок.
