@@ -12,7 +12,7 @@ local DEFAULT_SETTINGS = {
   require_zot = true,       -- вставлять только в панель, где работает zot
   clear_selection = true,
   multi_selection = true,   -- Ctrl+протяжка собирает несколько цитат
-  flush_delay = 0.8,        -- пауза после последнего Ctrl+отпускания мыши
+  flush_delay = 2.0,        -- пауза после последнего Ctrl+отпускания мыши
   cursor_after_first = true,
 }
 
@@ -159,7 +159,14 @@ flush = function(window, pane, settings)
   if settings.clear_selection then
     window:perform_action(act.ClearSelection, pane)
   end
-  window:toast_notification('quote-to-zot', string.format('Quoted %d', #quotes), nil, 1200)
+
+  local placed = (#quotes > 1 and settings.cursor_after_first and first_in_pane) and 'first' or 'end'
+  window:toast_notification(
+    'quote-to-zot',
+    string.format('Quoted %d, cursor %s', #quotes, placed),
+    nil,
+    1400
+  )
 end
 
 local function add_quote(pane, selection, settings)

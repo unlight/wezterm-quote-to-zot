@@ -60,7 +60,7 @@ quote_to_zot.apply(config, {
   require_zot = true,
   clear_selection = true,
   multi_selection = true,
-  flush_delay = 0.8,
+  flush_delay = 2.0,
   cursor_after_first = true,
 })
 ```
@@ -74,7 +74,7 @@ quote_to_zot.apply(config, {
 | `require_zot`     | `true`                          | Вставлять только в панель, где работает zot |
 | `clear_selection` | `true`                          | Снимать выделение после вставки |
 | `multi_selection` | `true`                          | `Ctrl` + протяжка собирает несколько цитат |
-| `flush_delay`     | `0.8`                           | Пауза после последнего выделения перед вставкой, секунды |
+| `flush_delay`     | `2.0`                           | Пауза после последнего выделения перед вставкой, секунды |
 | `cursor_after_first` | `true`                       | Ставить курсор под первой цитатой в блоке |
 
 Если выделение сделано в другой панели того же таба, цитата всё равно уйдёт
