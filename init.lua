@@ -14,12 +14,40 @@ local DEFAULT_SETTINGS = {
   multi_selection = true,   -- Ctrl+протяжка собирает несколько цитат
   flush_delay = 2.0,        -- пауза после последнего Ctrl+отпускания мыши
   cursor_after_first = true,
+  notify = 'status',        -- 'status' | 'toast' | 'none'
+  notify_timeout = 1.0,     -- секунды
 }
 
 local START_UPS = 500 -- столько Up перед Ctrl+A, чтобы попасть в начало поля
 
 local pasted_once = {} -- pane_id -> true после первой вставки
 local pending = {}     -- pane_id -> { quotes = {}, generation = 0 }
+local notify_generation = {}
+
+-- Секундное беззвучное сообщение в правой части таб-бара.
+local function notify(window, text, settings)
+  if settings.notify == 'none' then
+    return
+  end
+
+  if settings.notify == 'toast' then
+    window:toast_notification('quote-to-zot', text, nil, math.floor(settings.notify_timeout * 1000))
+    return
+  end
+
+  local window_id = tostring(window:window_id())
+  notify_generation[window_id] = (notify_generation[window_id] or 0) + 1
+  local generation = notify_generation[window_id]
+  window:set_right_status(text)
+  wezterm.time.call_after(settings.notify_timeout, function()
+    if notify_generation[window_id] ~= generation then
+      return
+    end
+    pcall(function()
+      window:set_right_status('')
+    end)
+  end)
+end
 
 local function split_lines(text)
   local normalized = text:gsub('\r\n', '\n'):gsub('\n+$', '')
@@ -143,7 +171,7 @@ flush = function(window, pane, settings)
   if settings.require_zot then
     target = find_zot_pane(window, pane)
     if not target then
-      window:toast_notification('quote-to-zot', 'No zot pane in this tab', nil, 1500)
+      notify(window, 'No zot pane in this tab', settings)
       return
     end
   end
@@ -161,12 +189,7 @@ flush = function(window, pane, settings)
   end
 
   local placed = (#quotes > 1 and settings.cursor_after_first and first_in_pane) and 'first' or 'end'
-  window:toast_notification(
-    'quote-to-zot',
-    string.format('Quoted %d, cursor %s', #quotes, placed),
-    nil,
-    1400
-  )
+  notify(window, string.format('Quoted %d, cursor %s', #quotes, placed), settings)
 end
 
 local function add_quote(pane, selection, settings)
@@ -211,7 +234,7 @@ local function on_hotkey(window, pane, settings)
   local queued = state and #state.quotes or 0
 
   if not selection and queued == 0 then
-    window:toast_notification('quote-to-zot', 'Nothing selected', nil, 1500)
+    notify(window, 'Nothing selected', settings)
     return
   end
 
@@ -237,12 +260,7 @@ local function on_ctrl_up(window, pane, settings)
     return
   end
   local state = add_quote(pane, selection, settings)
-  window:toast_notification(
-    'quote-to-zot',
-    string.format('Queued %d', #state.quotes),
-    nil,
-    900
-  )
+  notify(window, string.format('Queued %d', #state.quotes), settings)
   schedule_flush(window, pane, settings)
 end
 
